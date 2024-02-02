@@ -1,18 +1,17 @@
-import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 
 dotenv.config();
 
-const client = new MongoClient(process.env.ATLAS_URI);
+const { DB_USER, DB_PASSWORD, DB_HOST, DB_DATABASE } = process.env;
+const mongoURI = `mongodb+srv://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_DATABASE}`;
 
-let conn;
+const db = mongoose.connection;
 
-try {
-  conn = await client.connect();
-} catch (e) {
-  console.error(e);
-}
+mongoose.connect(mongoURI);
 
-let db = conn.db("sample_training");
+db.on("error", (err) => console.log(err.message, "is mongod not running?"));
+db.on("open", () => console.log("mongod connected"));
+db.on("close", () => console.log("mongod disconnected"));
 
 export default db;
