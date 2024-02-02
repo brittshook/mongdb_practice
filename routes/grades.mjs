@@ -3,6 +3,11 @@ import Grade from "../models/grade.mjs";
 
 const router = express.Router();
 
+router.get("/", async (req, res) => {
+  const result = await Grade.find().limit(1000);
+  res.status(200).json({ learners: result });
+});
+
 router.post("/", async (req, res) => {
   let newDocument = req.body;
 
@@ -11,8 +16,8 @@ router.post("/", async (req, res) => {
     delete newDocument.student_id;
   }
 
-  const result = await Grade.insertOne(newDocument);
-  res.status(204).json(result);
+  const result = new Grade(newDocument);
+  res.status(201).json({ grades: result });
 });
 
 router.get("/:id", async (req, res) => {
@@ -20,40 +25,36 @@ router.get("/:id", async (req, res) => {
   const result = await Grade.findById(objId);
 
   if (!result) res.json({ error: { error: "Not found" } }).status(404);
-  else res.status(200).json(result);
+  else res.status(200).json({ grades: result });
 });
 
 router.patch("/:id/add", async (req, res) => {
   const objId = req.params.id;
-  let result = await Grade.updateOne(
-    { _id: objId },
-    {
-      $push: { scores: req.body },
-    }
-  );
+  const result = await Grade.findByIdAndUpdate(objId, {
+    $push: { scores: req.body },
+  });
+  const updatedEntry = await Grade.findById(objId);
 
   if (!result || result.acknowledged == false)
     res.json({ error: "Not found" }).status(404);
-  else res.status(200).json(result);
+  else res.status(200).json({ grades: updatedEntry });
 });
 
 router.patch("/:id/remove", async (req, res) => {
   const objId = req.params.id;
-  let result = await Grade.updateOne(
-    { _id: objId },
-    {
-      $pull: { scores: req.body },
-    }
-  );
+  let result = await Grade.findByIdAndUpdate(objId, {
+    $pull: { scores: req.body },
+  });
+  const updatedEntry = await Grade.findById(objId);
 
   if (!result || result.acknowledged == false)
     res.json({ error: "Not found" }).status(404);
-  else res.status(200).json(result);
+  else res.status(200).json({ grades: updatedEntry });
 });
 
 router.delete("/:id", async (req, res) => {
   const objId = req.params.id;
-  let result = await Grade.deleteOne({ _id: objId });
+  let result = await Grade.findByIdAndDelete(objId);
 
   if (!result || result.deletedCount == 0)
     res.json({ error: "Not found" }).status(404);
@@ -73,13 +74,13 @@ router.get("/learner/:id", async (req, res) => {
   let result = await Grade.find(query);
 
   if (!result) res.json({ error: "Not found" }).status(404);
-  else res.status(200).json(result);
+  else res.status(200).json({ grades: result });
 });
 
 router.delete("/learner/:id", async (req, res) => {
   const learnerId = req.params.id;
 
-  let result = await Grade.deleteOne({ learner_id: Number(learnerId) });
+  let result = await Grade.findOneAndDelete({ learner_id: Number(learnerId) });
 
   if (!result || result.deletedCount == 0)
     res.json({ error: "Not found" }).status(404);
@@ -95,22 +96,26 @@ router.get("/class/:id", async (req, res) => {
   let result = await Grade.find(query);
 
   if (!result) res.json({ error: "Not found" }).status(404);
-  else res.status(200).json(result);
+  else res.status(200).json({ grades: result });
 });
 
 router.patch("/class/:id", async (req, res) => {
   const classId = req.params.id;
+  const newClassId = req.body.id;
 
   let result = await Grade.updateMany(
     { class_id: Number(classId) },
     {
-      $set: { class_id: req.body.class_id },
+      $set: { class_id: newClassId },
     }
   );
+  const updatedEntries = await Grade.find({
+    class_id: Number(newClassId),
+  });
 
   if (!result || result.acknowledged == false)
     res.json({ error: "Not found" }).status(404);
-  else res.status(200).json(result);
+  else res.status(200).json({ grades: updatedEntries });
 });
 
 router.delete("/class/:id", async (req, res) => {
