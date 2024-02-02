@@ -15,7 +15,8 @@ app.get("/", (req, res) => {
 app.use("/grades", grades);
 
 app.use((err, _req, res, next) => {
-  res.status(500).send("Seems like we messed up somewhere...");
+  console.log(err);
+  res.status(500).send("Internal Server Error");
 });
 
 app.listen(PORT, () => {
